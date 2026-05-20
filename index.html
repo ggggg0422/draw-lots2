@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>發言順序</title>
+<style>
+  body {
+    font-family: "Microsoft JhengHei", sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f4f4f9;
+  }
+  .container {
+    background: white;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    text-align: center;
+  }
+  #result {
+    font-size: 48px;
+    font-weight: bold;
+    color: #2c3e50;
+    margin: 20px 0;
+    min-height: 65px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px; /* 數字與文字之間的間距 */
+  }
+  .number {
+    color: #3498db; /* 數字維持藍色 */
+  }
+  .cw {
+    color: #27ae60; /* 順時針顯示為綠色 */
+  }
+  .ccw {
+    color: #e74c3c; /* 逆時針維持紅色對比 */
+  }
+  .arrow-down {
+    font-size: 50px;
+    animation: bounce 2s infinite;
+  }
+  @keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+      transform: translateY(0);
+    }
+    40% {
+      transform: translateY(-15px);
+    }
+    60% {
+      transform: translateY(-7px);
+    }
+  }
+  button {
+    font-size: 24px;
+    padding: 12px 30px;
+    cursor: pointer;
+    border: none;
+    border-radius: 8px;
+    background-color: #27ae60;
+    color: white;
+    transition: background-color 0.2s;
+  }
+  button:hover {
+    background-color: #2ecc71;
+  }
+  button:active {
+    transform: scale(0.98);
+  }
+  /* 新增：按鈕禁用時的樣式 */
+  button:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+    transform: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <h2>🐺 發言順序</h2>
+  <div id="result"><div class="arrow-down">🔽</div></div>
+  <button id="drawBtn" onclick="draw()">抽籤</button>
+</div>
+
+<script>
+  function draw() {
+    const btn = document.getElementById('drawBtn');
+    
+    // 避免動畫期間重複點擊
+    if (btn.disabled) return;
+    
+    // 進入抽籤狀態：鎖定按鈕並改變文字
+    btn.disabled = true;
+    btn.innerText = '抽籤中...';
+    
+    const resultDiv = document.getElementById('result');
+    const directions = ['順時針', '逆時針'];
+    
+    // 預先決定最終結果
+    const finalNumber = Math.floor(Math.random() * 12) + 1;
+    const finalDirection = directions[Math.floor(Math.random() * 2)];
+    const finalDirClass = finalDirection === '順時針' ? 'cw' : 'ccw';
+    
+    // 啟動快速跳動動畫（每 50 毫秒變換一次）
+    const intervalId = setInterval(() => {
+      const tempNumber = Math.floor(Math.random() * 12) + 1;
+      const tempDirection = directions[Math.floor(Math.random() * 2)];
+      const tempDirClass = tempDirection === '順時針' ? 'cw' : 'ccw';
+      
+      resultDiv.innerHTML = `<span class="number">${tempNumber}</span> <span class="${tempDirClass}">${tempDirection}</span>`;
+    }, 50);
+
+    // 設定 1.5 秒後（1500毫秒）停止動畫，顯示最終結果
+    setTimeout(() => {
+      clearInterval(intervalId); // 停止跳動
+      
+      // 顯示最終結果
+      resultDiv.innerHTML = `<span class="number">${finalNumber}</span> <span class="${finalDirClass}">${finalDirection}</span>`;
+      
+      // 恢復按鈕狀態
+      btn.disabled = false;
+      btn.innerText = '抽籤';
+    }, 1500);
+  }
+</script>
+
+</body>
+</html>
