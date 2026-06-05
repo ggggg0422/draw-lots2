@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>發言順序</title>
+<title>發言順序與計時系統</title>
 <style>
   body {
     font-family: "Microsoft JhengHei", sans-serif;
@@ -11,124 +11,590 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 100vh;
+    min-height: 100vh;
     margin: 0;
     background-color: #f4f4f9;
   }
   .container {
     background: white;
-    padding: 40px;
+    padding: 30px 40px;
     border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     text-align: center;
+    width: 350px;
+  }
+  
+  /* --- 抽籤系統樣式 --- */
+  h2 {
+    color: #333;
+    margin-top: 0;
   }
   #result {
-    font-size: 48px;
+    font-size: 40px;
     font-weight: bold;
     color: #2c3e50;
     margin: 20px 0;
-    min-height: 65px;
+    min-height: 60px;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 15px; /* 數字與文字之間的間距 */
+  }
+  .direction {
+    margin-left: 15px;
+  }
+  .direction-green {
+    color: #27ae60;
+  }
+  .direction-red {
+    color: #e74c3c;
   }
   .number {
-    color: #3498db; /* 數字維持藍色 */
+    color: #3498db;
   }
-  .cw {
-    color: #27ae60; /* 順時針顯示為綠色 */
-  }
-  .ccw {
-    color: #e74c3c; /* 逆時針維持紅色對比 */
-  }
-  .arrow-down {
+  .arrow {
     font-size: 50px;
     animation: bounce 2s infinite;
   }
   @keyframes bounce {
-    0%, 20%, 50%, 80%, 100% {
-      transform: translateY(0);
-    }
-    40% {
-      transform: translateY(-15px);
-    }
-    60% {
-      transform: translateY(-7px);
-    }
+    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-15px); }
+    60% { transform: translateY(-7px); }
   }
-  button {
+  .draw-btn {
     font-size: 24px;
     padding: 12px 30px;
     cursor: pointer;
     border: none;
     border-radius: 8px;
-    background-color: #27ae60;
+    background-color: #2c3e50;
     color: white;
     transition: background-color 0.2s;
+    width: 100%;
+    margin-bottom: 20px;
   }
-  button:hover {
-    background-color: #2ecc71;
-  }
-  button:active {
-    transform: scale(0.98);
-  }
-  /* 新增：按鈕禁用時的樣式 */
-  button:disabled {
-    background-color: #bdc3c7;
+  .draw-btn:hover { background-color: #34495e; }
+  .draw-btn:active { transform: scale(0.98); }
+  .draw-btn:disabled {
+    background-color: #95a5a6;
     cursor: not-allowed;
     transform: none;
+  }
+
+  /* --- 設定區塊樣式 --- */
+  .settings-details {
+    margin-bottom: 15px;
+    font-size: 14px;
+    color: #555;
+    text-align: left;
+  }
+  .settings-details summary {
+    cursor: pointer;
+    user-select: none;
+    font-weight: bold;
+    padding: 5px 0;
+    text-align: center;
+    font-size: 16px; /* 稍微放大標題字體 */
+  }
+  .settings-details[open] summary {
+    margin-bottom: 10px;
+  }
+
+  /* --- 分隔線 --- */
+  .divider {
+    border: 0;
+    height: 1px;
+    background: #e0e0e0;
+    margin: 25px 0;
+  }
+
+  /* --- 計時器樣式 --- */
+  .timer-section h2 {
+    font-size: 20px;
+    color: #555;
+    margin-bottom: 10px;
+  }
+  .time-selector {
+    margin: 10px 0;
+    padding: 0 10px;
+  }
+  #time-slider {
+    -webkit-appearance: none;
+    width: 100%;
+    height: 6px;
+    background: #e0e0e0;
+    border-radius: 5px;
+    outline: none;
+    margin-bottom: 5px;
+    transition: opacity 0.2s;
+  }
+  #time-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #3498db;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  }
+  #time-slider::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #3498db;
+    cursor: pointer;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    border: none;
+  }
+  #time-slider:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  #time-slider:disabled::-webkit-slider-thumb {
+    cursor: not-allowed;
+  }
+  .time-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #7f8c8d;
+    padding: 0 2px;
+    user-select: none;
+  }
+  .time-labels span {
+    cursor: pointer;
+  }
+  #timer-display {
+    font-size: 56px;
+    font-weight: bold;
+    font-family: monospace;
+    color: #2c3e50;
+    margin: 10px 0 20px 0;
+    transition: color 0.3s;
+  }
+  #timer-display.danger {
+    color: #e74c3c;
+    animation: pulse 1s infinite;
+  }
+  @keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+  }
+  .timer-controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+  }
+  .timer-controls button {
+    font-size: 15px;
+    padding: 10px 0;
+    flex: 1;
+    cursor: pointer;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    transition: background-color 0.2s, transform 0.1s;
+  }
+  .timer-controls button:active:not(:disabled) {
+    transform: scale(0.95);
+  }
+  #start-btn { background-color: #3498db; }
+  #start-btn:hover { background-color: #2980b9; }
+  #add-time-30-btn, #add-time-60-btn { background-color: #f39c12; }
+  #add-time-30-btn:hover:not(:disabled), #add-time-60-btn:hover:not(:disabled) { background-color: #d68910; }
+  #add-time-30-btn:disabled, #add-time-60-btn:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+  #reset-btn { background-color: #7f8c8d; }
+  #reset-btn:hover { background-color: #636e72; }
+
+  /* --- 紀錄區塊樣式 --- */
+  .number-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+  .record-item {
+    background-color: #fff;
+    border: 2px solid #bdc3c7;
+    color: #2c3e50;
+    border-radius: 8px;
+    padding: 10px 0;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .record-item:hover {
+    border-color: #95a5a6;
+    background-color: #f8f9fa;
+  }
+  .record-item.used {
+    background-color: #95a5a6;
+    border-color: #95a5a6;
+    color: white;
+    text-decoration: line-through;
+  }
+  .reset-record-btn {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.2s;
+  }
+  .reset-record-btn:hover {
+    background-color: #c0392b;
   }
 </style>
 </head>
 <body>
 
+<!-- 隱藏的音效元件 -->
+<audio id="time-up-sound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3" preload="auto"></audio>
+
 <div class="container">
+  <!-- 抽籤系統區塊 -->
   <h2>🐺 發言順序</h2>
-  <div id="result"><div class="arrow-down">🔽</div></div>
-  <button id="drawBtn" onclick="draw()">抽籤</button>
+  <div id="result"><div class="arrow">🔽</div></div>
+  
+  <details class="settings-details">
+    <summary>⚙️ 設定參與號碼 (點擊可排除)</summary>
+    <div id="selection-grid" class="number-grid"></div>
+  </details>
+
+  <button id="drawBtn" class="draw-btn" onclick="startDrawAnimation()">抽籤</button>
+
+  <hr class="divider">
+
+  <!-- 計時器區塊 -->
+  <div class="timer-section">
+    <h2>⏳ 發言倒數</h2>
+    <div class="time-selector">
+      <input type="range" id="time-slider" min="0" max="2" value="1" step="1">
+      <div class="time-labels">
+        <span onclick="setTimeSlider(0)">1分</span>
+        <span onclick="setTimeSlider(1)">1分半</span>
+        <span onclick="setTimeSlider(2)">2分</span>
+      </div>
+    </div>
+    <div id="timer-display">01:30</div>
+    <div class="timer-controls">
+      <button id="start-btn" onclick="toggleTimer()">開始</button>
+      <button id="add-time-30-btn" onclick="addTime(30)">+30秒</button>
+      <button id="add-time-60-btn" onclick="addTime(60)">+1分鐘</button>
+      <button id="reset-btn" onclick="resetTimer()">重置</button>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- 已加時紀錄區塊 -->
+  <div class="record-section">
+    <details class="settings-details">
+      <summary>📝 已加時號碼紀錄</summary>
+      <div id="record-grid" class="number-grid">
+        <!-- JS 動態生成 1-12 號碼 -->
+      </div>
+      <div style="text-align: center;">
+        <button class="reset-record-btn" onclick="resetRecords()">清空號碼紀錄</button>
+      </div>
+    </details>
+  </div>
 </div>
 
 <script>
-  function draw() {
-    const btn = document.getElementById('drawBtn');
-    
-    // 避免動畫期間重複點擊
-    if (btn.disabled) return;
-    
-    // 進入抽籤狀態：鎖定按鈕並改變文字
-    btn.disabled = true;
-    btn.innerText = '抽籤中...';
-    
-    const resultDiv = document.getElementById('result');
-    const directions = ['順時針', '逆時針'];
-    
-    // 預先決定最終結果
-    const finalNumber = Math.floor(Math.random() * 12) + 1;
-    const finalDirection = directions[Math.floor(Math.random() * 2)];
-    const finalDirClass = finalDirection === '順時針' ? 'cw' : 'ccw';
-    
-    // 啟動快速跳動動畫（每 50 毫秒變換一次）
-    const intervalId = setInterval(() => {
-      const tempNumber = Math.floor(Math.random() * 12) + 1;
-      const tempDirection = directions[Math.floor(Math.random() * 2)];
-      const tempDirClass = tempDirection === '順時針' ? 'cw' : 'ccw';
-      
-      resultDiv.innerHTML = `<span class="number">${tempNumber}</span> <span class="${tempDirClass}">${tempDirection}</span>`;
-    }, 50);
+  /* ================= 抽籤系統邏輯 ================= */
+  let availableNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
-    // 設定 1.5 秒後（1500毫秒）停止動畫，顯示最終結果
-    setTimeout(() => {
-      clearInterval(intervalId); // 停止跳動
+  function startDrawAnimation() {
+    if (availableNumbers.length === 0) {
+      alert('請至少保留一個參與抽籤的號碼！');
+      return;
+    }
+
+    const resultDiv = document.getElementById('result');
+    const drawBtn = document.getElementById('drawBtn');
+    
+    drawBtn.disabled = true;
+    drawBtn.innerText = "抽籤中...";
+    
+    let jumps = 0;
+    const maxJumps = 30; 
+    
+    const interval = setInterval(() => {
+      const tempNumber = availableNumbers[Math.floor(Math.random() * availableNumbers.length)];
+      const directions = ['順時針', '逆時針'];
+      const tempDirection = directions[Math.floor(Math.random() * 2)];
+      const tempColorClass = tempDirection === '順時針' ? 'direction-green' : 'direction-red';
       
-      // 顯示最終結果
-      resultDiv.innerHTML = `<span class="number">${finalNumber}</span> <span class="${finalDirClass}">${finalDirection}</span>`;
+      resultDiv.innerHTML = `<span class="number">${tempNumber}</span> <span class="direction ${tempColorClass}">${tempDirection}</span>`;
       
-      // 恢復按鈕狀態
-      btn.disabled = false;
-      btn.innerText = '抽籤';
-    }, 1500);
+      jumps++;
+      
+      if (jumps >= maxJumps) {
+        clearInterval(interval);
+        
+        const finalNumber = availableNumbers[Math.floor(Math.random() * availableNumbers.length)];
+        const finalDirection = directions[Math.floor(Math.random() * 2)];
+        const finalColorClass = finalDirection === '順時針' ? 'direction-green' : 'direction-red';
+        
+        resultDiv.style.opacity = 0;
+        setTimeout(() => {
+          resultDiv.innerHTML = `<span class="number">${finalNumber}</span> <span class="direction ${finalColorClass}">${finalDirection}</span>`;
+          resultDiv.style.opacity = 1;
+          resultDiv.style.transition = "opacity 0.2s ease-in";
+          
+          drawBtn.disabled = false;
+          drawBtn.innerText = "抽籤";
+        }, 100);
+      }
+    }, 50); 
   }
+
+  /* ================= 計時器邏輯 ================= */
+  const timeOptions = [60, 90, 120]; // 1分, 1分半, 2分
+  let baseTime = timeOptions[1]; // 預設 90 秒 (1分30秒)
+  let timeLeft = baseTime; 
+  let timerInterval = null;
+  let isRunning = false;
+  let hasAddedTime = false; // 追蹤是否加過時
+  let globalAddTimeAmount = 0; // 紀錄本局全局加時長度，0代表尚未選擇
+
+  const timerDisplay = document.getElementById('timer-display');
+  const startBtn = document.getElementById('start-btn');
+  const timeUpSound = document.getElementById('time-up-sound');
+  const timeSlider = document.getElementById('time-slider');
+
+  // 監聽滑桿變動
+  timeSlider.addEventListener('input', (e) => {
+    baseTime = timeOptions[e.target.value];
+    resetTimer();
+  });
+
+  // 點擊標籤可以直接跳轉滑桿
+  function setTimeSlider(index) {
+    if (timeSlider.disabled) return;
+    timeSlider.value = index;
+    baseTime = timeOptions[index];
+    resetTimer();
+  }
+
+  let soundPlayCount = 0; // 紀錄音效播放次數
+
+  // 監聽音效結束事件，讓音效重複播放 3 次
+  timeUpSound.addEventListener('ended', () => {
+    soundPlayCount++;
+    if (soundPlayCount < 3) {
+      timeUpSound.currentTime = 0;
+      timeUpSound.play().catch(e => console.log(e));
+    }
+  });
+
+  // 更新畫面時間顯示
+  function updateTimerDisplay() {
+    if (timeLeft <= 0) {
+      timerDisplay.innerText = "00:00";
+      timerDisplay.classList.add('danger');
+      return;
+    }
+    
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    // 補零格式化 (例如 1 變成 01)
+    const formattedTime = 
+      String(minutes).padStart(2, '0') + ':' + 
+      String(seconds).padStart(2, '0');
+    
+    timerDisplay.innerText = formattedTime;
+    
+    // 剩下 10 秒時變紅色警告
+    if (timeLeft <= 10) {
+      timerDisplay.classList.add('danger');
+    } else {
+      timerDisplay.classList.remove('danger');
+    }
+  }
+
+  // 播放音效函數
+  function playTimeUpSound() {
+    soundPlayCount = 0; // 重置播放計數
+    timeUpSound.currentTime = 0; // 確保每次播放都從頭開始
+    timeUpSound.play().catch(error => {
+      console.log("自動播放音效被瀏覽器阻擋:", error);
+    });
+  }
+
+  // 開始或暫停計時
+  function toggleTimer() {
+    if (isRunning) {
+      // 執行中 -> 暫停
+      clearInterval(timerInterval);
+      startBtn.innerText = "繼續";
+      startBtn.style.backgroundColor = "#2ecc71"; // 換成綠色提示可繼續
+    } else {
+      // 暫停中 -> 開始
+      if (timeLeft <= 0) return; // 沒時間就不動作
+      
+      timeSlider.disabled = true; // 鎖定滑桿防止誤觸
+      
+      timerInterval = setInterval(() => {
+        timeLeft--;
+        updateTimerDisplay();
+        
+        // 時間到
+        if (timeLeft <= 0) {
+          clearInterval(timerInterval);
+          isRunning = false;
+          startBtn.innerText = "時間到";
+          startBtn.disabled = true;
+          startBtn.style.backgroundColor = "#95a5a6";
+          
+          // 播放提示音
+          playTimeUpSound();
+        }
+      }, 1000);
+      
+      startBtn.innerText = "暫停";
+      startBtn.style.backgroundColor = "#e74c3c"; // 換成紅色提示可暫停
+    }
+    isRunning = !isRunning;
+  }
+
+  // 加時功能 (傳入30或60)
+  function addTime(amount) {
+    if (!hasAddedTime && timeLeft > 0) {
+      if (globalAddTimeAmount === 0) {
+        globalAddTimeAmount = amount; // 第一次選擇時，鎖定全場加時長度
+      }
+      
+      timeLeft += globalAddTimeAmount;
+      hasAddedTime = true;
+      
+      updateTimerDisplay();
+      updateTimerControls();
+    }
+  }
+
+  // 更新計時器按鈕顯示狀態
+  function updateTimerControls() {
+    const btn30 = document.getElementById('add-time-30-btn');
+    const btn60 = document.getElementById('add-time-60-btn');
+    
+    if (!btn30 || !btn60) return;
+
+    // 根據全局設定隱藏非選擇的按鈕
+    if (globalAddTimeAmount === 30) {
+      btn30.style.display = '';
+      btn60.style.display = 'none';
+    } else if (globalAddTimeAmount === 60) {
+      btn30.style.display = 'none';
+      btn60.style.display = '';
+    } else {
+      btn30.style.display = '';
+      btn60.style.display = '';
+    }
+    
+    // 若已加時則禁用按鈕
+    btn30.disabled = hasAddedTime;
+    btn60.disabled = hasAddedTime;
+  }
+
+  // 重置計時器
+  function resetTimer() {
+    clearInterval(timerInterval);
+    isRunning = false;
+    timeLeft = baseTime; // 回復為目前滑桿選擇的時間
+    hasAddedTime = false; // 解除加時限制
+    
+    timeSlider.disabled = false; // 解鎖滑桿
+    
+    // 恢復按鈕狀態
+    startBtn.innerText = "開始";
+    startBtn.disabled = false;
+    startBtn.style.backgroundColor = "#3498db";
+    
+    updateTimerDisplay();
+    updateTimerControls(); // 重置下一位玩家的加時按鈕狀態
+    
+    // 停止正在播放的音效
+    timeUpSound.pause();
+    timeUpSound.currentTime = 0;
+    soundPlayCount = 3; // 把計數器設滿，避免被意外觸發繼續播放
+  }
+
+  // 網頁載入時初始化顯示時間與按鈕狀態
+  updateTimerDisplay();
+  updateTimerControls();
+
+  /* ================= 已加時紀錄邏輯 ================= */
+  const recordGrid = document.getElementById('record-grid');
+
+  // 初始化 1-12 號碼按鈕
+  function initRecordGrid() {
+    recordGrid.innerHTML = ''; // 先清空
+    for (let i = 1; i <= 12; i++) {
+      const btn = document.createElement('div');
+      btn.className = 'record-item';
+      btn.innerText = i;
+      // 點擊時切換已使用的樣式
+      btn.onclick = () => {
+        btn.classList.toggle('used');
+      };
+      recordGrid.appendChild(btn);
+    }
+  }
+
+  // 清空所有號碼紀錄
+  function resetRecords() {
+    const items = recordGrid.querySelectorAll('.record-item');
+    items.forEach(item => item.classList.remove('used'));
+    
+    // 清空紀錄等同於新開一局，解除「加時長度鎖定」
+    globalAddTimeAmount = 0;
+    updateTimerControls();
+  }
+
+  // 初始化參與號碼設定面板
+  const selectionGrid = document.getElementById('selection-grid');
+  function initSelectionGrid() {
+    selectionGrid.innerHTML = ''; // 先清空
+    for (let i = 1; i <= 12; i++) {
+      const btn = document.createElement('div');
+      btn.className = 'record-item'; // 借用相同的方塊樣式
+      btn.innerText = i;
+      
+      // 點擊時從可用陣列中移除或加回
+      btn.onclick = () => {
+        const index = availableNumbers.indexOf(i);
+        if (index !== -1) {
+          // 在陣列內 -> 準備移除 (排除此號碼)
+          if (availableNumbers.length === 1) {
+            alert('至少要保留一個參與號碼！');
+            return;
+          }
+          availableNumbers.splice(index, 1);
+          btn.classList.add('used'); // 變灰
+        } else {
+          // 不在陣列內 -> 準備加回 (參與抽籤)
+          availableNumbers.push(i);
+          btn.classList.remove('used'); // 恢復正常
+        }
+        // 確保陣列由小到大排序
+        availableNumbers.sort((a, b) => a - b);
+      };
+      selectionGrid.appendChild(btn);
+    }
+  }
+
+  // 網頁載入時初始化面板
+  initRecordGrid();
+  initSelectionGrid();
 </script>
 
 </body>
