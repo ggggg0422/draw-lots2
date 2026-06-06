@@ -387,10 +387,10 @@
 
   let soundPlayCount = 0; // 紀錄音效播放次數
 
-  // 監聽音效結束事件，讓音效重複播放 3 次
+  // 監聽音效結束事件，讓音效重複播放 2 次
   timeUpSound.addEventListener('ended', () => {
     soundPlayCount++;
-    if (soundPlayCount < 3) {
+    if (soundPlayCount < 2) {
       timeUpSound.currentTime = 0;
       timeUpSound.play().catch(e => console.log(e));
     }
@@ -468,16 +468,34 @@
 
   // 加時功能 (傳入30或60)
   function addTime(amount) {
-    if (!hasAddedTime && timeLeft > 0) {
+    if (!hasAddedTime) { // 移除 timeLeft > 0 的限制，讓倒數結束後也能加時
       if (globalAddTimeAmount === 0) {
         globalAddTimeAmount = amount; // 第一次選擇時，鎖定全場加時長度
       }
+      
+      const wasTimeUp = (timeLeft <= 0); // 紀錄加時前是否已經時間到
+      
+      // 如果時間為負數(保險起見)，先歸零再加
+      if (timeLeft < 0) timeLeft = 0;
       
       timeLeft += globalAddTimeAmount;
       hasAddedTime = true;
       
       updateTimerDisplay();
       updateTimerControls();
+      
+      // 如果加時前已經時間到，需要恢復「開始」按鈕的狀態並停止音效，且自動啟動
+      if (wasTimeUp) {
+        startBtn.disabled = false;
+        
+        // 停止時間到的提示音
+        timeUpSound.pause();
+        timeUpSound.currentTime = 0;
+        soundPlayCount = 2; 
+        
+        // 自動開始倒數
+        toggleTimer();
+      }
     }
   }
 
@@ -525,7 +543,7 @@
     // 停止正在播放的音效
     timeUpSound.pause();
     timeUpSound.currentTime = 0;
-    soundPlayCount = 3; // 把計數器設滿，避免被意外觸發繼續播放
+    soundPlayCount = 2; // 把計數器設滿，避免被意外觸發繼續播放
   }
 
   // 網頁載入時初始化顯示時間與按鈕狀態
