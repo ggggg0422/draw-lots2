@@ -309,28 +309,6 @@
 </div>
 
 <script>
-  /* ================= 音效解鎖邏輯 (針對手機版防呆) ================= */
-  let isAudioUnlocked = false;
-  function unlockMobileAudio() {
-    if (!isAudioUnlocked) {
-      const audio = document.getElementById('time-up-sound');
-      if (audio) {
-        audio.volume = 0; // 先靜音播放避免發出怪聲
-        const playPromise = audio.play();
-        if (playPromise !== undefined) {
-          playPromise.then(() => {
-            audio.pause();
-            audio.currentTime = 0;
-            audio.volume = 1; // 授權成功後恢復音量
-            isAudioUnlocked = true;
-          }).catch(() => {
-            audio.volume = 1; // 若解鎖失敗依然恢復音量，等待下一次正確點擊
-          });
-        }
-      }
-    }
-  }
-
   /* ================= 抽籤系統邏輯 ================= */
   let availableNumbers = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 
@@ -407,18 +385,7 @@
     resetTimer();
   }
 
-  let soundPlayCount = 0; // 紀錄音效播放次數
-
-  // 監聽音效結束事件，讓音效重複播放 2 次
-  timeUpSound.addEventListener('ended', () => {
-    soundPlayCount++;
-    if (soundPlayCount < 2) {
-      timeUpSound.currentTime = 0;
-      timeUpSound.play().catch(e => console.log(e));
-    }
-  });
-
-  // 更新畫面時間顯示
+  // 更新畫面時間顯示 (補回遺失的函數)
   function updateTimerDisplay() {
     if (timeLeft <= 0) {
       timerDisplay.innerText = "00:00";
@@ -443,29 +410,53 @@
     }
   }
 
+  let targetPlayCount = 0;
+  let currentPlayCount = 0;
+
+  // 監聽音效結束事件，控制重複播放次數
+  timeUpSound.addEventListener('ended', () => {
+    currentPlayCount++;
+    if (currentPlayCount < targetPlayCount) {
+      timeUpSound.currentTime = 0;
+      timeUpSound.play().catch(e => console.log(e));
+    }
+  });
+
   // 播放音效函數
-  function playTimeUpSound() {
-    soundPlayCount = 0; // 重置播放計數
-    timeUpSound.currentTime = 0; // 確保每次播放都從頭開始
+  function playAudio(times) {
+    targetPlayCount = times;
+    currentPlayCount = 0;
+    timeUpSound.pause();
+    timeUpSound.currentTime = 0;
+    timeUpSound.volume = 1;
     timeUpSound.play().catch(error => {
       console.log("自動播放音效被瀏覽器阻擋:", error);
     });
   }
 
+  // 停止音效函數
+  function stopAudio() {
+    targetPlayCount = 0;
+    timeUpSound.pause();
+    timeUpSound.currentTime = 0;
+  }
+
   // 開始或暫停計時
   function toggleTimer() {
-    unlockMobileAudio(); // 點擊開始時嘗試解鎖手機音效權限
-
     if (isRunning) {
       // 執行中 -> 暫停
       clearInterval(timerInterval);
       startBtn.innerText = "繼續";
       startBtn.style.backgroundColor = "#2ecc71"; // 換成綠色提示可繼續
+      stopAudio(); // 暫停時也停止音效
     } else {
       // 暫停中 -> 開始
       if (timeLeft <= 0) return; // 沒時間就不動作
       
       timeSlider.disabled = true; // 鎖定滑桿防止誤觸
+      
+      // 開始時播放1次音效
+      playAudio(1);
       
       timerInterval = setInterval(() => {
         timeLeft--;
@@ -479,8 +470,8 @@
           startBtn.disabled = true;
           startBtn.style.backgroundColor = "#95a5a6";
           
-          // 播放提示音
-          playTimeUpSound();
+          // 倒數結束時播放2次音效
+          playAudio(2);
         }
       }, 1000);
       
@@ -513,11 +504,9 @@
         startBtn.disabled = false;
         
         // 停止時間到的提示音
-        timeUpSound.pause();
-        timeUpSound.currentTime = 0;
-        soundPlayCount = 2; 
+        stopAudio();
         
-        // 自動開始倒數
+        // 自動開始倒數 (這會同時觸發開始的1次提示音)
         toggleTimer();
       }
     }
@@ -565,9 +554,7 @@
     updateTimerControls(); // 重置下一位玩家的加時按鈕狀態
     
     // 停止正在播放的音效
-    timeUpSound.pause();
-    timeUpSound.currentTime = 0;
-    soundPlayCount = 2; // 把計數器設滿，避免被意外觸發繼續播放
+    stopAudio();
   }
 
   // 網頁載入時初始化顯示時間與按鈕狀態
